@@ -1,8 +1,8 @@
-FROM buildpack-deps:stretch-curl
+FROM buildpack-deps:bullseye-curl
 MAINTAINER Manfred Touron <m@42.am> (https://github.com/moul)
 
 # Install deps
-RUN set -x; echo "Starting image build for Debian Stretch" \
+RUN set -x; echo "Starting image build for Debian Bullseye" \
  && dpkg --add-architecture arm64                      \
  && dpkg --add-architecture armel                      \
  && dpkg --add-architecture armhf                      \
@@ -61,10 +61,9 @@ RUN apt-get install -y mingw-w64 \
 
 #Build arguments
 ARG osxcross_repo="tpoechtrager/osxcross"
-ARG osxcross_revision="542acc2ef6c21aeb3f109c03748b1015a71fed63"
-ARG darwin_sdk_version="10.10"
-ARG darwin_osx_version_min="10.6"
-ARG darwin_version="14"
+ARG osxcross_revision="062922bbb81ac52787d8e53fa4af190acb552ec7"
+ARG darwin_sdk_version="11.3"
+ARG darwin_version="20.4"
 ARG darwin_sdk_url="https://www.dropbox.com/s/yfbesd249w10lpc/MacOSX${darwin_sdk_version}.sdk.tar.xz"
 
 # ENV available in docker image
@@ -72,17 +71,16 @@ ENV OSXCROSS_REPO="${osxcross_repo}"                   \
     OSXCROSS_REVISION="${osxcross_revision}"           \
     DARWIN_SDK_VERSION="${darwin_sdk_version}"         \
     DARWIN_VERSION="${darwin_version}"                 \
-    DARWIN_OSX_VERSION_MIN="${darwin_osx_version_min}" \
     DARWIN_SDK_URL="${darwin_sdk_url}"
 
+COPY ./osxcross-tarballs /tmp/osxcross-tarballs
 RUN mkdir -p "/tmp/osxcross"                                                                                   \
  && cd "/tmp/osxcross"                                                                                         \
  && curl -sLo osxcross.tar.gz "https://codeload.github.com/${OSXCROSS_REPO}/tar.gz/${OSXCROSS_REVISION}"  \
  && tar --strip=1 -xzf osxcross.tar.gz                                                                         \
  && rm -f osxcross.tar.gz                                                                                      \
- && curl -sLo tarballs/MacOSX${DARWIN_SDK_VERSION}.sdk.tar.xz                                                  \
-             "${DARWIN_SDK_URL}"                \
- && yes "" | SDK_VERSION="${DARWIN_SDK_VERSION}" OSX_VERSION_MIN="${DARWIN_OSX_VERSION_MIN}" ./build.sh                               \
+ && cp /tmp/osxcross-tarballs/MacOSX${DARWIN_SDK_VERSION}.sdk.tar.xz tarballs/MacOSX${DARWIN_SDK_VERSION}.sdk.tar.xz \
+ && SDK_VERSION="${DARWIN_SDK_VERSION}" UNATTENDED=1 ./build.sh                               \
  && mv target /usr/osxcross                                                                                    \
  && mv tools /usr/osxcross/                                                                                    \
  && ln -sf ../tools/osxcross-macports /usr/osxcross/bin/omp                                                    \
